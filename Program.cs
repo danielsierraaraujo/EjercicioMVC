@@ -20,11 +20,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(opciones =>
 
 var app = builder.Build();
 
-
-    app.UseSwagger();
-    app.UseSwaggerUI();
-
-
+app.UseSwagger();
+app.UseSwaggerUI();
+app.UseCors("PermitirReact");
 // DATA SEEDING: Crear datos de prueba al iniciar
 
 using (var scope = app.Services.CreateScope())

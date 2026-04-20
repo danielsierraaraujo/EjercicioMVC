@@ -18,9 +18,7 @@ namespace CalculadoraNotasAPI.Controllers
             _context = context;
         }
 
-        // ==========================================
         // 1. ENDPOINT: CONSULTAR NOTAS (GET)
-        // ==========================================
         [HttpGet("calificacionesFinales/{idBanner}")]
         public IActionResult ObtenerCalificacionesFinales(string idBanner)
         {
@@ -48,7 +46,7 @@ namespace CalculadoraNotasAPI.Controllers
 
             decimal acumuladoActual = aporteP1 + aporteP2;
 
-            // Fórmula de supervivencia (Meta de 6.0 y peso de 40%)
+            // Fórmula (Meta de 6.0 y peso de 40%)
             decimal notaNecesitadaP3 = (6.0m - acumuladoActual) / 0.40m;
             notaNecesitadaP3 = Math.Round(notaNecesitadaP3, 2); // Redondeo a 2 decimales
 
@@ -66,9 +64,7 @@ namespace CalculadoraNotasAPI.Controllers
             return Ok(reporte);
         }
 
-        // ==========================================
         // 2. ENDPOINT: REGISTRAR ALUMNO Y NOTAS (POST)
-        // ==========================================
         [HttpPost("registrar")]
         public IActionResult RegistrarAlumno([FromBody] RegistroDTO dto)
         {
@@ -90,10 +86,8 @@ namespace CalculadoraNotasAPI.Controllers
         }
     }
 
-    // ==========================================
     // CLASE AUXILIAR (DTO)
     // Molde para recibir el paquete de datos de React
-    // ==========================================
     public class RegistroDTO
     {
         public string Name { get; set; } = string.Empty;
