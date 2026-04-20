@@ -1,35 +1,39 @@
 using Microsoft.EntityFrameworkCore;
 using CalculadoraNotasAPI.Data;
 using CalculadoraNotasAPI.Models;
-using System;
-using System.Net; // <--- LA LLAVE MÁGICA PARA REDES
+using System.Net;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // ==========================================
-// EL PARCHE MAESTRO PARA RENDER (Forzar IPv4)
+// 1. CONFIGURACIÓN DE RED (PUERTO Y IPV4)
 // ==========================================
 var portString = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 var port = int.Parse(portString);
+
 builder.WebHost.ConfigureKestrel(opciones =>
 {
-    // Esto obliga a .NET a usar IPv4 (0.0.0.0) en lugar del conflictivo IPv6
+    // Forzamos IPv4 (0.0.0.0) para que Render no dé error de conexión
     opciones.Listen(IPAddress.Any, port); 
 });
 
-// 1. Agregar Servicios
+// ==========================================
+// 2. CONFIGURACIÓN DE SERVICIOS
+// ==========================================
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// 2. Configurar CORS (Pase VIP para React)
+// CONFIGURACIÓN DE CORS (Permiso para Vercel)
 builder.Services.AddCors(opciones => {
-    opciones.AddPolicy("PermitirReact", politica => {
-        politica.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+    opciones.AddPolicy("PermitirTodo", politica => {
+        politica.AllowAnyOrigin()   // Esto permite que Vercel se conecte sin problemas
+                .AllowAnyHeader()
+                .AllowAnyMethod();
     });
 });
 
-// 3. Base de Datos
+// Base de datos en memoria
 builder.Services.AddDbContext<ApplicationDbContext>(opciones =>
     opciones.UseInMemoryDatabase("UniversidadDB")
 );
@@ -37,20 +41,24 @@ builder.Services.AddDbContext<ApplicationDbContext>(opciones =>
 var app = builder.Build();
 
 // ==========================================
-// CONFIGURACIÓN DE SWAGGER
+// 3. CONFIGURACIÓN DEL PIPELINE (MIDDLEWARE)
 // ==========================================
+
+// Swagger siempre visible para pruebas
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "Calculadora API v1");
-    c.RoutePrefix = string.Empty; // Pone la pantalla verde al inicio
+    c.RoutePrefix = string.Empty; 
 });
 
-app.UseCors("PermitirReact");
+// ACTIVAR CORS (Debe ir antes de MapControllers)
+app.UseCors("PermitirTodo");
+
 app.MapControllers();
 
 // ==========================================
-// DATA SEEDING (Datos de prueba)
+// 4. DATOS INICIALES Y RUTA DE PRUEBA
 // ==========================================
 using (var scope = app.Services.CreateScope())
 {
@@ -62,7 +70,7 @@ using (var scope = app.Services.CreateScope())
     db.SaveChanges();
 }
 
-// Ruta de emergencia para comprobar vida
-app.MapGet("/ping", () => "¡La API está viva, escuchando en IPv4 y conectada a Render!");
+// Ruta para verificar que la API está arriba
+app.MapGet("/ping", () => "¡API lista y con CORS abierto!");
 
-app.Run(); // Inicia el servidor con la red que configuramos arriba
+app.Run();
