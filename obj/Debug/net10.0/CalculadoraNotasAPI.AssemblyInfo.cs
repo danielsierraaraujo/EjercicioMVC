@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("CalculadoraNotasAPI")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+90ceba4c0b74ddac4b92a2e089a10b25fa1ae053")]
 [assembly: System.Reflection.AssemblyProductAttribute("CalculadoraNotasAPI")]
 [assembly: System.Reflection.AssemblyTitleAttribute("CalculadoraNotasAPI")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
