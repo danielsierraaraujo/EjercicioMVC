@@ -5,33 +5,22 @@ using System.Net;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ==========================================
-// 1. CONFIGURACIÓN DE RED (PUERTO Y IPV4)
-// ==========================================
+// 1. CONFIGURACIÓN DEL PUERTO (Vital para Render)
 var portString = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 var port = int.Parse(portString);
 
 builder.WebHost.ConfigureKestrel(opciones =>
 {
-    // Forzamos IPv4 (0.0.0.0) para que Render no dé error de conexión
     opciones.Listen(IPAddress.Any, port); 
 });
 
-// ==========================================
-// 2. CONFIGURACIÓN DE SERVICIOS
-// ==========================================
+// 2. AGREGAR SERVICIOS
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// CONFIGURACIÓN DE CORS (Permiso para Vercel)
-builder.Services.AddCors(opciones => {
-    opciones.AddPolicy("PermitirTodo", politica => {
-        politica.AllowAnyOrigin()   // Esto permite que Vercel se conecte sin problemas
-                .AllowAnyHeader()
-                .AllowAnyMethod();
-    });
-});
+// Agregamos el servicio de CORS
+builder.Services.AddCors();
 
 // Base de datos en memoria
 builder.Services.AddDbContext<ApplicationDbContext>(opciones =>
@@ -40,11 +29,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(opciones =>
 
 var app = builder.Build();
 
-// ==========================================
-// 3. CONFIGURACIÓN DEL PIPELINE (MIDDLEWARE)
-// ==========================================
+// 3. CONFIGURACIÓN DEL PIPELINE (EL ORDEN IMPORTA AQUÍ)
 
-// Swagger siempre visible para pruebas
+// Swagger como página principal
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
@@ -52,14 +39,16 @@ app.UseSwaggerUI(c =>
     c.RoutePrefix = string.Empty; 
 });
 
-// ACTIVAR CORS (Debe ir antes de MapControllers)
-app.UseCors("PermitirTodo");
+// CONFIGURACIÓN GLOBAL DE CORS (Sin nombres, permiso total)
+app.UseCors(x => x
+    .AllowAnyMethod()
+    .AllowAnyHeader()
+    .SetIsOriginAllowed(origin => true) // permite cualquier origen
+    .AllowCredentials());
 
 app.MapControllers();
 
-// ==========================================
-// 4. DATOS INICIALES Y RUTA DE PRUEBA
-// ==========================================
+// 4. DATOS INICIALES (Para que no esté vacía al arrancar)
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -70,7 +59,6 @@ using (var scope = app.Services.CreateScope())
     db.SaveChanges();
 }
 
-// Ruta para verificar que la API está arriba
-app.MapGet("/ping", () => "¡API lista y con CORS abierto!");
+app.MapGet("/ping", () => "API en línea y con CORS abierto");
 
 app.Run();
