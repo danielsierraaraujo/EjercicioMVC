@@ -1,9 +1,21 @@
 using Microsoft.EntityFrameworkCore;
 using CalculadoraNotasAPI.Data;
 using CalculadoraNotasAPI.Models;
-using System; // Necesario para leer variables de entorno
+using System;
+using System.Net; // <--- LA LLAVE MÁGICA PARA REDES
 
 var builder = WebApplication.CreateBuilder(args);
+
+// ==========================================
+// EL PARCHE MAESTRO PARA RENDER (Forzar IPv4)
+// ==========================================
+var portString = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+var port = int.Parse(portString);
+builder.WebHost.ConfigureKestrel(opciones =>
+{
+    // Esto obliga a .NET a usar IPv4 (0.0.0.0) en lugar del conflictivo IPv6
+    opciones.Listen(IPAddress.Any, port); 
+});
 
 // 1. Agregar Servicios
 builder.Services.AddControllers();
@@ -31,7 +43,7 @@ app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "Calculadora API v1");
-    c.RoutePrefix = string.Empty; // Swagger en la página de inicio
+    c.RoutePrefix = string.Empty; // Pone la pantalla verde al inicio
 });
 
 app.UseCors("PermitirReact");
@@ -50,15 +62,7 @@ using (var scope = app.Services.CreateScope())
     db.SaveChanges();
 }
 
-// ==========================================
-// RUTA DE EMERGENCIA Y PUERTOS DE RENDER
-// ==========================================
+// Ruta de emergencia para comprobar vida
+app.MapGet("/ping", () => "¡La API está viva, escuchando en IPv4 y conectada a Render!");
 
-// Ruta infalible para probar conexión
-app.MapGet("/ping", () => "¡La API está viva, escuchando en la nube y conectada!");
-
-// Leer el puerto dinámico que Render nos exige usar
-var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-
-// Encender la API forzando la puerta correcta en todas las redes (0.0.0.0)
-app.Run($"http://0.0.0.0:{port}");
+app.Run(); // Inicia el servidor con la red que configuramos arriba
