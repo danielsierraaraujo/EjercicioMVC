@@ -1,5 +1,5 @@
 # 1. Usamos el motor de .NET para compilar tu código
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /app
 
 # Copiamos todo tu código a la nube
@@ -10,7 +10,7 @@ RUN dotnet restore
 RUN dotnet publish -c Release -o out
 
 # 2. Usamos un motor más ligero solo para correr la API
-FROM mcr.microsoft.com/dotnet/aspnet:8.0
+FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
 COPY --from=build /app/out .
 
