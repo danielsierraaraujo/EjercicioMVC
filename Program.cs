@@ -1,79 +1,64 @@
 using Microsoft.EntityFrameworkCore;
 using CalculadoraNotasAPI.Data;
 using CalculadoraNotasAPI.Models;
+using System; // Necesario para leer variables de entorno
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// 1. Agregar Servicios
 builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+// 2. Configurar CORS (Pase VIP para React)
 builder.Services.AddCors(opciones => {
     opciones.AddPolicy("PermitirReact", politica => {
         politica.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
     });
 });
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 
+// 3. Base de Datos
 builder.Services.AddDbContext<ApplicationDbContext>(opciones =>
     opciones.UseInMemoryDatabase("UniversidadDB")
 );
 
 var app = builder.Build();
 
+// ==========================================
+// CONFIGURACIÓN DE SWAGGER
+// ==========================================
 app.UseSwagger();
-app.UseSwaggerUI();
-app.UseCors("PermitirReact");
-// DATA SEEDING: Crear datos de prueba al iniciar
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Calculadora API v1");
+    c.RoutePrefix = string.Empty; // Swagger en la página de inicio
+});
 
+app.UseCors("PermitirReact");
+app.MapControllers();
+
+// ==========================================
+// DATA SEEDING (Datos de prueba)
+// ==========================================
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    
-    // 1. Creamos tu perfil de estudiante
     var estudianteTest = new Alumno { Name = "Daniel Cárdenas", IdBanner = "17075" };
     db.Alumnos.Add(estudianteTest);
-    
-    // 2. Te asignamos notas (Progreso 1: 7.0 | Progreso 2: 9.0)
     db.Notas.Add(new Nota { NotaValor = 7.0m, Progreso = 1, IdBanner = "17075", Alumno = estudianteTest });
     db.Notas.Add(new Nota { NotaValor = 9.0m, Progreso = 2, IdBanner = "17075", Alumno = estudianteTest });
-    
-    // 3. Guardamos los cambios
     db.SaveChanges();
 }
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
+// ==========================================
+// RUTA DE EMERGENCIA Y PUERTOS DE RENDER
+// ==========================================
 
-app.UseHttpsRedirection();
+// Ruta infalible para probar conexión
+app.MapGet("/ping", () => "¡La API está viva, escuchando en la nube y conectada!");
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+// Leer el puerto dinámico que Render nos exige usar
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
-
-app.UseHttpsRedirection();
-app.MapControllers();
-app.UseCors("PermitirReact");
-app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
+// Encender la API forzando la puerta correcta en todas las redes (0.0.0.0)
+app.Run($"http://0.0.0.0:{port}");
